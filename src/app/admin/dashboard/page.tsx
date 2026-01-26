@@ -23,7 +23,6 @@ export default function AdminDashboard() {
     date: "",
     time: "",
     venue: "",
-    registration_deadline: "",
     max_registrations: 100,
   });
 
@@ -122,10 +121,10 @@ export default function AdminDashboard() {
           date: dateStr,
           time: timeStr,
           venue: formData.venue,
-          registration_deadline: formData.registration_deadline,
           max_registrations: formData.max_registrations,
           poster_url: posterUrl,
           created_by: "00000000-0000-0000-0000-000000000000",
+          registration_deadline: dateStr,
         },
       ]);
 
@@ -138,7 +137,6 @@ export default function AdminDashboard() {
         date: "",
         time: "",
         venue: "",
-        registration_deadline: "",
         max_registrations: 100,
       });
       setPosterFile(null);
@@ -162,7 +160,6 @@ export default function AdminDashboard() {
       date: dateTime,
       time: event.time || "",
       venue: event.venue || "",
-      registration_deadline: event.registration_deadline || "",
       max_registrations: event.max_registrations || 100,
     });
     setShowEditForm(true);
@@ -187,8 +184,8 @@ export default function AdminDashboard() {
         date: dateStr,
         time: timeStr,
         venue: formData.venue,
-        registration_deadline: formData.registration_deadline,
         max_registrations: formData.max_registrations,
+        registration_deadline: dateStr,
       };
 
       if (posterFile) {
@@ -210,7 +207,6 @@ export default function AdminDashboard() {
         date: "",
         time: "",
         venue: "",
-        registration_deadline: "",
         max_registrations: 100,
       });
       setPosterFile(null);
@@ -328,7 +324,6 @@ export default function AdminDashboard() {
                 date: "",
                 time: "",
                 venue: "",
-                registration_deadline: "",
                 max_registrations: 100,
               });
             }}
@@ -402,19 +397,6 @@ export default function AdminDashboard() {
 
               <div>
                 <label className="block text-white/90 text-sm font-medium mb-2">
-                  Registration Deadline *
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={formData.registration_deadline}
-                  onChange={(e) => setFormData({ ...formData, registration_deadline: e.target.value })}
-                  className="w-full px-4 py-2 rounded-lg backdrop-blur-xl bg-white/5 border border-white/10 text-white focus:border-orange-500/50 focus:outline-none transition-colors"
-                />
-              </div>
-
-              <div>
-                <label className="block text-white/90 text-sm font-medium mb-2">
                   Max Registrations *
                 </label>
                 <input
@@ -429,21 +411,7 @@ export default function AdminDashboard() {
                 />
               </div>
 
-              <div className="md:col-span-2">
-                <label className="block text-white/90 text-sm font-medium mb-2">
-                  Full Description *
-                </label>
-                <textarea
-                  required
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-4 py-2 rounded-lg backdrop-blur-xl bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:border-orange-500/50 focus:outline-none transition-colors"
-                  placeholder="Full event description..."
-                  rows={4}
-                />
-              </div>
-
-              <div className="md:col-span-2">
+              <div>
                 <label className="block text-white/90 text-sm font-medium mb-2">
                   Poster Image
                 </label>
@@ -456,6 +424,20 @@ export default function AdminDashboard() {
                 {posterFile && (
                   <p className="text-white/60 text-sm mt-2">Selected: {posterFile.name}</p>
                 )}
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-white/90 text-sm font-medium mb-2">
+                  Full Description *
+                </label>
+                <textarea
+                  required
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="w-full px-4 py-2 rounded-lg backdrop-blur-xl bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:border-orange-500/50 focus:outline-none transition-colors"
+                  placeholder="Full event description..."
+                  rows={4}
+                />
               </div>
             </div>
 
@@ -544,19 +526,6 @@ export default function AdminDashboard() {
 
               <div>
                 <label className="block text-white/90 text-sm font-medium mb-2">
-                  Registration Deadline *
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={formData.registration_deadline}
-                  onChange={(e) => setFormData({ ...formData, registration_deadline: e.target.value })}
-                  className="w-full px-4 py-2 rounded-lg backdrop-blur-xl bg-white/5 border border-white/10 text-white focus:border-orange-500/50 focus:outline-none transition-colors"
-                />
-              </div>
-
-              <div>
-                <label className="block text-white/90 text-sm font-medium mb-2">
                   Max Registrations *
                 </label>
                 <input
@@ -571,20 +540,7 @@ export default function AdminDashboard() {
                 />
               </div>
 
-              <div className="md:col-span-2">
-                <label className="block text-white/90 text-sm font-medium mb-2">
-                  Full Description *
-                </label>
-                <textarea
-                  required
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-4 py-2 rounded-lg backdrop-blur-xl bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:border-orange-500/50 focus:outline-none transition-colors"
-                  rows={4}
-                />
-              </div>
-
-              <div className="md:col-span-2">
+              <div>
                 <label className="block text-white/90 text-sm font-medium mb-2">
                   Poster Image (Optional)
                 </label>
@@ -597,6 +553,19 @@ export default function AdminDashboard() {
                 {posterFile && (
                   <p className="text-white/60 text-sm mt-2">Selected: {posterFile.name}</p>
                 )}
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-white/90 text-sm font-medium mb-2">
+                  Full Description *
+                </label>
+                <textarea
+                  required
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="w-full px-4 py-2 rounded-lg backdrop-blur-xl bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:border-orange-500/50 focus:outline-none transition-colors"
+                  rows={4}
+                />
               </div>
             </div>
 
