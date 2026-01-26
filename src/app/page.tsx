@@ -2,6 +2,8 @@
 import EventCard from "@/components/EventCard";
 import { Event } from "@/types";
 
+export const dynamic = "force-dynamic";
+
 async function getEvents(): Promise<Event[]> {
   try {
     // Skip fetching if Supabase URL not set (for build time)
@@ -33,14 +35,14 @@ export default async function Home() {
         <div className="max-w-7xl mx-auto text-center">
           <div className="mb-4 sm:mb-6 inline-block">
             <span className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-gradient-to-r from-orange-400/20 to-pink-600/20 border border-orange-500/30 text-orange-300 text-xs sm:text-sm font-semibold">
-               Event Discovery Portal
+              Event Discovery Portal
             </span>
           </div>
-          
+
           <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold bg-gradient-to-r from-violet-400 via-pink-400 to-orange-400 bg-clip-text text-transparent mb-3 sm:mb-4">
             Discover College Events
           </h1>
-          
+
           <p className="text-base sm:text-lg md:text-xl text-white/70 max-w-2xl mx-auto mb-6 sm:mb-8 px-2">
             Register for departmental activities, workshops, and college-wide events.
             Stay connected with Er. Perumal Manimekalai College of Engineering
