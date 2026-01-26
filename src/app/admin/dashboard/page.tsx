@@ -108,27 +108,47 @@ export default function AdminDashboard() {
     try {
       let posterUrl = "";
       if (posterFile) {
-        posterUrl = await uploadPoster(posterFile);
+        try {
+          posterUrl = await uploadPoster(posterFile);
+        } catch (uploadErr) {
+          console.error("Poster upload failed:", uploadErr);
+          throw new Error("Failed to upload poster image. Please ensure the 'event-posters' bucket exists in your Supabase project and has public access enabled.");
+        }
       }
+
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) throw new Error("User not authenticated");
+
+      console.log("Attempting to create event with user:", user?.id);
+      console.log("Form Data:", formData);
+      console.log("Poster URL:", posterUrl);
 
       const [dateStr, timeStr] = formData.date.split("T");
 
-      const { error: createError } = await supabase.from("events").insert([
-        {
-          title: formData.title,
-          short_description: formData.short_description,
-          description: formData.description,
-          date: dateStr,
-          time: timeStr,
-          venue: formData.venue,
-          max_registrations: formData.max_registrations,
-          poster_url: posterUrl,
-          created_by: "00000000-0000-0000-0000-000000000000",
-          registration_deadline: dateStr,
-        },
-      ]);
+      const payload = {
+        title: formData.title,
+        short_description: formData.short_description,
+        description: formData.description,
+        date: dateStr,
+        time: timeStr,
+        venue: formData.venue,
+        max_registrations: formData.max_registrations,
+        poster_url: posterUrl || null,
+        created_by: user.id,
+        registration_deadline: dateStr,
+      };
+      console.log("Payload:", payload);
 
-      if (createError) throw createError;
+      const { error: createError } = await supabase.from("events").insert([payload]);
+
+      if (createError) {
+        console.error("Supabase Insert Error Object:", createError);
+        console.error("Error Code:", createError.code);
+        console.error("Error Message:", createError.message);
+        console.error("Error Details:", createError.details);
+        console.error("Error Hint:", createError.hint);
+        throw createError;
+      }
 
       setFormData({
         title: "",
@@ -142,8 +162,13 @@ export default function AdminDashboard() {
       setPosterFile(null);
       setShowCreateForm(false);
       fetchEvents();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create event");
+    } catch (err: any) {
+      console.error("Create event catch block:", err);
+      // Try to extract useful info from the error
+      const msg = err.message || JSON.stringify(err);
+      const details = err.details || "";
+      const hint = err.hint || "";
+      setError(`Failed to create event: ${msg} ${details} ${hint}`);
     } finally {
       setUploading(false);
     }
@@ -603,11 +628,10 @@ export default function AdminDashboard() {
                 events.map((event) => (
                   <div
                     key={event.id}
-                    className={`p-4 rounded-lg border transition-all ${
-                      selectedEventId === event.id
-                        ? "bg-orange-500/20 border-orange-500"
-                        : "bg-white/5 border-white/10 hover:border-white/20"
-                    }`}
+                    className={`p-4 rounded-lg border transition-all ${selectedEventId === event.id
+                      ? "bg-orange-500/20 border-orange-500"
+                      : "bg-white/5 border-white/10 hover:border-white/20"
+                      }`}
                   >
                     <button
                       onClick={() => setSelectedEventId(event.id)}

@@ -11,10 +11,11 @@ interface Event {
   title: string;
   description: string;
   date: string;
-  location: string;
+  venue: string;
   category: string;
-  registration_limit: number;
+  max_registrations: number;
   poster_url: string;
+  time: string;
 }
 
 export default function EventDetailsPage() {
@@ -83,7 +84,7 @@ export default function EventDetailsPage() {
       if (!event) throw new Error("Event not found");
 
       // Check if event is full
-      if (registrationCount >= event.registration_limit) {
+      if (registrationCount >= event.max_registrations) {
         throw new Error("This event has reached its registration limit");
       }
 
@@ -150,7 +151,7 @@ export default function EventDetailsPage() {
   }
 
   const eventDate = new Date(event.date);
-  const seatsAvailable = event.registration_limit - registrationCount;
+  const seatsAvailable = event.max_registrations - registrationCount;
   const isEventFull = seatsAvailable <= 0;
 
   return (
@@ -195,7 +196,7 @@ export default function EventDetailsPage() {
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-xl">📍</span>
-                  <p className="text-white font-semibold">{event.location}</p>
+                  <p className="text-white font-semibold">{event.venue}</p>
                 </div>
               </div>
 
@@ -213,12 +214,12 @@ export default function EventDetailsPage() {
               <div className="bg-gradient-to-br from-orange-500/10 to-pink-500/10 border border-orange-500/20 rounded-lg p-4">
                 <p className="text-white/60 text-sm mb-1">Seats Available</p>
                 <p className="text-3xl font-bold text-white">
-                  {seatsAvailable}/{event.registration_limit}
+                  {seatsAvailable}/{event.max_registrations}
                 </p>
                 <div className="mt-3 w-full bg-white/10 rounded-full h-2">
                   <div
                     className="bg-gradient-to-r from-orange-400 to-pink-600 h-2 rounded-full transition-all"
-                    style={{ width: `${(registrationCount / event.registration_limit) * 100}%` }}
+                    style={{ width: `${(registrationCount / event.max_registrations) * 100}%` }}
                   />
                 </div>
               </div>

@@ -26,7 +26,7 @@ export default function Header() {
             </div>
             <div className="flex flex-col min-w-0">
               <span className="text-white font-bold text-xs sm:text-sm leading-tight">PMC TECH</span>
-              <span className="text-white/50 text-xs leading-tight hidden xs:block">Inspire to Innovate</span>
+              <span className="text-white/50 text-xs leading-tight block">Inspire to Innovate</span>
             </div>
           </Link>
 
@@ -34,11 +34,10 @@ export default function Header() {
           <nav className="flex items-center gap-3 sm:gap-6">
             <Link
               href="/"
-              className={`text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
-                pathname === "/" && !isAdminPage
+              className={`text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${pathname === "/" && !isAdminPage
                   ? "text-orange-400"
                   : "text-white/70 hover:text-white"
-              }`}
+                }`}
             >
               Events
             </Link>
@@ -46,11 +45,10 @@ export default function Header() {
             {isAdminPage && (
               <Link
                 href="/admin"
-                className={`text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
-                  pathname.startsWith("/admin")
+                className={`text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${pathname.startsWith("/admin")
                     ? "text-orange-400"
                     : "text-white/70 hover:text-white"
-                }`}
+                  }`}
               >
                 Dashboard
               </Link>
