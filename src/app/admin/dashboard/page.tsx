@@ -2,34 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-
-interface Event {
-  id: string;
-  title: string;
-  description: string;
-  date: string;
-  location: string;
-  category: string;
-  registration_limit: number;
-  poster_url?: string;
-}
-
-interface Registration {
-  id: string;
-  student_name: string;
-  student_roll_no: string;
-  department: string;
-  email: string;
-  event_id: string;
-  created_at: string;
-}
 
 export default function AdminDashboard() {
   const router = useRouter();
-  const [events, setEvents] = useState<Event[]>([]);
-  const [registrations, setRegistrations] = useState<Registration[]>([]);
+  const [events, setEvents] = useState<any[]>([]);
+  const [registrations, setRegistrations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedEventId, setSelectedEventId] = useState<string>("");
@@ -40,11 +18,13 @@ export default function AdminDashboard() {
   const [posterFile, setPosterFile] = useState<File | null>(null);
   const [formData, setFormData] = useState({
     title: "",
+    short_description: "",
     description: "",
     date: "",
-    location: "",
-    category: "",
-    registration_limit: 100,
+    time: "",
+    venue: "",
+    registration_deadline: "",
+    max_registrations: 100,
   });
 
   // Check if user is logged in
@@ -55,11 +35,8 @@ export default function AdminDashboard() {
         router.push("/admin/login");
         return;
       }
-
-      // Get events
       fetchEvents();
     };
-
     checkAuth();
   }, [router]);
 
@@ -131,38 +108,41 @@ export default function AdminDashboard() {
 
     try {
       let posterUrl = "";
-
       if (posterFile) {
         posterUrl = await uploadPoster(posterFile);
       }
 
+      const [dateStr, timeStr] = formData.date.split("T");
+
       const { error: createError } = await supabase.from("events").insert([
         {
           title: formData.title,
+          short_description: formData.short_description,
           description: formData.description,
-          date: formData.date,
-          location: formData.location,
-          category: formData.category,
-          registration_limit: formData.registration_limit,
+          date: dateStr,
+          time: timeStr,
+          venue: formData.venue,
+          registration_deadline: formData.registration_deadline,
+          max_registrations: formData.max_registrations,
           poster_url: posterUrl,
+          created_by: "00000000-0000-0000-0000-000000000000",
         },
       ]);
 
       if (createError) throw createError;
 
-      // Reset form
       setFormData({
         title: "",
+        short_description: "",
         description: "",
         date: "",
-        location: "",
-        category: "",
-        registration_limit: 100,
+        time: "",
+        venue: "",
+        registration_deadline: "",
+        max_registrations: 100,
       });
       setPosterFile(null);
       setShowCreateForm(false);
-
-      // Refresh events
       fetchEvents();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create event");
@@ -172,15 +152,18 @@ export default function AdminDashboard() {
   };
 
   // Start editing event
-  const handleEditClick = (event: Event) => {
+  const handleEditClick = (event: any) => {
     setEditingEventId(event.id);
+    const dateTime = `${event.date}T${event.time}`;
     setFormData({
       title: event.title,
+      short_description: event.short_description || "",
       description: event.description,
-      date: event.date,
-      location: event.location,
-      category: event.category,
-      registration_limit: event.registration_limit,
+      date: dateTime,
+      time: event.time || "",
+      venue: event.venue || "",
+      registration_deadline: event.registration_deadline || "",
+      max_registrations: event.max_registrations || 100,
     });
     setShowEditForm(true);
     setPosterFile(null);
@@ -195,16 +178,19 @@ export default function AdminDashboard() {
     try {
       if (!editingEventId) throw new Error("No event selected for editing");
 
+      const [dateStr, timeStr] = formData.date.split("T");
+
       let updateData: any = {
         title: formData.title,
+        short_description: formData.short_description,
         description: formData.description,
-        date: formData.date,
-        location: formData.location,
-        category: formData.category,
-        registration_limit: formData.registration_limit,
+        date: dateStr,
+        time: timeStr,
+        venue: formData.venue,
+        registration_deadline: formData.registration_deadline,
+        max_registrations: formData.max_registrations,
       };
 
-      // Upload new poster if provided
       if (posterFile) {
         const posterUrl = await uploadPoster(posterFile);
         updateData.poster_url = posterUrl;
@@ -217,20 +203,19 @@ export default function AdminDashboard() {
 
       if (updateError) throw updateError;
 
-      // Reset form
       setFormData({
         title: "",
+        short_description: "",
         description: "",
         date: "",
-        location: "",
-        category: "",
-        registration_limit: 100,
+        time: "",
+        venue: "",
+        registration_deadline: "",
+        max_registrations: 100,
       });
       setPosterFile(null);
       setShowEditForm(false);
       setEditingEventId(null);
-
-      // Refresh events
       fetchEvents();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update event");
@@ -241,45 +226,12 @@ export default function AdminDashboard() {
 
   // Delete event
   const handleDeleteEvent = async (eventId: string) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this event? This will also delete all registrations for this event."
-    );
-
-    if (!confirmed) return;
+    if (!window.confirm("Are you sure you want to delete this event?")) return;
 
     setError("");
     setUploading(true);
 
     try {
-      // Delete registrations first
-      const { error: regError } = await supabase
-        .from("registrations")
-        .delete()
-        .eq("event_id", eventId);
-
-      if (regError) throw regError;
-
-      // Get event to find poster file
-      const { data: eventData } = await supabase
-        .from("events")
-        .select("poster_url")
-        .eq("id", eventId)
-        .single();
-
-      // Delete poster from storage if it exists
-      if (eventData?.poster_url) {
-        try {
-          const posterFileName = eventData.poster_url.split("/").pop();
-          if (posterFileName) {
-            await supabase.storage.from("event-posters").remove([posterFileName]);
-          }
-        } catch (err) {
-          // Continue even if poster deletion fails
-          console.error("Failed to delete poster file:", err);
-        }
-      }
-
-      // Delete event
       const { error: deleteError } = await supabase
         .from("events")
         .delete()
@@ -287,12 +239,9 @@ export default function AdminDashboard() {
 
       if (deleteError) throw deleteError;
 
-      // Reset selection
       if (selectedEventId === eventId) {
         setSelectedEventId("");
       }
-
-      // Refresh events
       fetchEvents();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete event");
@@ -300,7 +249,6 @@ export default function AdminDashboard() {
       setUploading(false);
     }
   };
-
 
   // Export registrations as CSV
   const handleExportCSV = () => {
@@ -312,7 +260,7 @@ export default function AdminDashboard() {
     const headers = ["Name", "Roll Number", "Department", "Email", "Registered At"];
     const rows = registrations.map((reg) => [
       reg.student_name,
-      reg.student_roll_no,
+      reg.register_number,
       reg.department,
       reg.email,
       new Date(reg.created_at).toLocaleString(),
@@ -337,9 +285,7 @@ export default function AdminDashboard() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-white text-center">
-          <div className="mb-4 text-3xl">Loading...</div>
-        </div>
+        <div className="text-white text-center text-3xl">Loading...</div>
       </div>
     );
   }
@@ -377,11 +323,13 @@ export default function AdminDashboard() {
               setEditingEventId(null);
               setFormData({
                 title: "",
+                short_description: "",
                 description: "",
                 date: "",
-                location: "",
-                category: "",
-                registration_limit: 100,
+                time: "",
+                venue: "",
+                registration_deadline: "",
+                max_registrations: 100,
               });
             }}
             className="px-6 py-3 rounded-lg bg-gradient-to-r from-orange-400 to-orange-600 text-white font-semibold hover:shadow-lg hover:shadow-orange-500/50 transition-all"
@@ -399,7 +347,7 @@ export default function AdminDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-white/90 text-sm font-medium mb-2">
-                  Event Title
+                  Event Title *
                 </label>
                 <input
                   type="text"
@@ -413,26 +361,40 @@ export default function AdminDashboard() {
 
               <div>
                 <label className="block text-white/90 text-sm font-medium mb-2">
-                  Date & Time
+                  Short Description *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.short_description}
+                  onChange={(e) => setFormData({ ...formData, short_description: e.target.value })}
+                  className="w-full px-4 py-2 rounded-lg backdrop-blur-xl bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:border-orange-500/50 focus:outline-none transition-colors"
+                  placeholder="Brief description..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-white/90 text-sm font-medium mb-2">
+                  Date & Time *
                 </label>
                 <input
                   type="datetime-local"
                   required
                   value={formData.date}
                   onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                  className="w-full px-4 py-2 rounded-lg backdrop-blur-xl bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:border-orange-500/50 focus:outline-none transition-colors"
+                  className="w-full px-4 py-2 rounded-lg backdrop-blur-xl bg-white/5 border border-white/10 text-white focus:border-orange-500/50 focus:outline-none transition-colors"
                 />
               </div>
 
               <div>
                 <label className="block text-white/90 text-sm font-medium mb-2">
-                  Location
+                  Venue *
                 </label>
                 <input
                   type="text"
                   required
-                  value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                  value={formData.venue}
+                  onChange={(e) => setFormData({ ...formData, venue: e.target.value })}
                   className="w-full px-4 py-2 rounded-lg backdrop-blur-xl bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:border-orange-500/50 focus:outline-none transition-colors"
                   placeholder="e.g., Main Auditorium"
                 />
@@ -440,57 +402,48 @@ export default function AdminDashboard() {
 
               <div>
                 <label className="block text-white/90 text-sm font-medium mb-2">
-                  Category
+                  Registration Deadline *
                 </label>
-                <select
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full px-4 py-3 rounded-lg backdrop-blur-xl bg-white/5 border border-white/10 text-white focus:border-orange-500/50 focus:outline-none transition-colors appearance-none cursor-pointer"
-                  style={{
-                    backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e")`,
-                    backgroundRepeat: 'no-repeat',
-                    backgroundPosition: 'right 0.75rem center',
-                    backgroundSize: '16px 12px',
-                    paddingRight: '2.5rem',
-                  }}
-                >
-                  <option value="" className="bg-slate-900 text-white">Select Category</option>
-                  <option value="Technical" className="bg-slate-900 text-white">Technical</option>
-                  <option value="Cultural" className="bg-slate-900 text-white">Cultural</option>
-                  <option value="Sports" className="bg-slate-900 text-white">Sports</option>
-                  <option value="Workshop" className="bg-slate-900 text-white">Workshop</option>
-                </select>
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-white/90 text-sm font-medium mb-2">
-                  Description
-                </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-4 py-2 rounded-lg backdrop-blur-xl bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:border-orange-500/50 focus:outline-none transition-colors"
-                  placeholder="Event description..."
-                  rows={4}
+                <input
+                  type="date"
+                  required
+                  value={formData.registration_deadline}
+                  onChange={(e) => setFormData({ ...formData, registration_deadline: e.target.value })}
+                  className="w-full px-4 py-2 rounded-lg backdrop-blur-xl bg-white/5 border border-white/10 text-white focus:border-orange-500/50 focus:outline-none transition-colors"
                 />
               </div>
 
               <div>
                 <label className="block text-white/90 text-sm font-medium mb-2">
-                  Registration Limit
+                  Max Registrations *
                 </label>
                 <input
                   type="number"
                   min="1"
-                  value={formData.registration_limit}
+                  required
+                  value={formData.max_registrations}
                   onChange={(e) =>
-                    setFormData({ ...formData, registration_limit: parseInt(e.target.value) })
+                    setFormData({ ...formData, max_registrations: parseInt(e.target.value) })
                   }
                   className="w-full px-4 py-2 rounded-lg backdrop-blur-xl bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:border-orange-500/50 focus:outline-none transition-colors"
                 />
               </div>
 
-              <div>
+              <div className="md:col-span-2">
+                <label className="block text-white/90 text-sm font-medium mb-2">
+                  Full Description *
+                </label>
+                <textarea
+                  required
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="w-full px-4 py-2 rounded-lg backdrop-blur-xl bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:border-orange-500/50 focus:outline-none transition-colors"
+                  placeholder="Full event description..."
+                  rows={4}
+                />
+              </div>
+
+              <div className="md:col-span-2">
                 <label className="block text-white/90 text-sm font-medium mb-2">
                   Poster Image
                 </label>
@@ -529,15 +482,6 @@ export default function AdminDashboard() {
                 onClick={() => {
                   setShowEditForm(false);
                   setEditingEventId(null);
-                  setFormData({
-                    title: "",
-                    description: "",
-                    date: "",
-                    location: "",
-                    category: "",
-                    registration_limit: 100,
-                  });
-                  setPosterFile(null);
                 }}
                 className="text-white/60 hover:text-white"
               >
@@ -548,7 +492,7 @@ export default function AdminDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-white/90 text-sm font-medium mb-2">
-                  Event Title
+                  Event Title *
                 </label>
                 <input
                   type="text"
@@ -556,90 +500,91 @@ export default function AdminDashboard() {
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   className="w-full px-4 py-2 rounded-lg backdrop-blur-xl bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:border-orange-500/50 focus:outline-none transition-colors"
-                  placeholder="e.g., Tech Fest 2026"
                 />
               </div>
 
               <div>
                 <label className="block text-white/90 text-sm font-medium mb-2">
-                  Date & Time
+                  Short Description *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.short_description}
+                  onChange={(e) => setFormData({ ...formData, short_description: e.target.value })}
+                  className="w-full px-4 py-2 rounded-lg backdrop-blur-xl bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:border-orange-500/50 focus:outline-none transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="block text-white/90 text-sm font-medium mb-2">
+                  Date & Time *
                 </label>
                 <input
                   type="datetime-local"
                   required
                   value={formData.date}
                   onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                  className="w-full px-4 py-2 rounded-lg backdrop-blur-xl bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:border-orange-500/50 focus:outline-none transition-colors"
+                  className="w-full px-4 py-2 rounded-lg backdrop-blur-xl bg-white/5 border border-white/10 text-white focus:border-orange-500/50 focus:outline-none transition-colors"
                 />
               </div>
 
               <div>
                 <label className="block text-white/90 text-sm font-medium mb-2">
-                  Location
+                  Venue *
                 </label>
                 <input
                   type="text"
                   required
-                  value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                  value={formData.venue}
+                  onChange={(e) => setFormData({ ...formData, venue: e.target.value })}
                   className="w-full px-4 py-2 rounded-lg backdrop-blur-xl bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:border-orange-500/50 focus:outline-none transition-colors"
-                  placeholder="e.g., Main Auditorium"
                 />
               </div>
 
               <div>
                 <label className="block text-white/90 text-sm font-medium mb-2">
-                  Category
+                  Registration Deadline *
                 </label>
-                <select
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full px-4 py-3 rounded-lg backdrop-blur-xl bg-white/5 border border-white/10 text-white focus:border-orange-500/50 focus:outline-none transition-colors appearance-none cursor-pointer"
-                  style={{
-                    backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e")`,
-                    backgroundRepeat: 'no-repeat',
-                    backgroundPosition: 'right 0.75rem center',
-                    backgroundSize: '16px 12px',
-                    paddingRight: '2.5rem',
-                  }}
-                >
-                  <option value="" className="bg-slate-900 text-white">Select Category</option>
-                  <option value="Technical" className="bg-slate-900 text-white">Technical</option>
-                  <option value="Cultural" className="bg-slate-900 text-white">Cultural</option>
-                  <option value="Sports" className="bg-slate-900 text-white">Sports</option>
-                  <option value="Workshop" className="bg-slate-900 text-white">Workshop</option>
-                </select>
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-white/90 text-sm font-medium mb-2">
-                  Description
-                </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-4 py-2 rounded-lg backdrop-blur-xl bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:border-orange-500/50 focus:outline-none transition-colors"
-                  placeholder="Event description..."
-                  rows={4}
+                <input
+                  type="date"
+                  required
+                  value={formData.registration_deadline}
+                  onChange={(e) => setFormData({ ...formData, registration_deadline: e.target.value })}
+                  className="w-full px-4 py-2 rounded-lg backdrop-blur-xl bg-white/5 border border-white/10 text-white focus:border-orange-500/50 focus:outline-none transition-colors"
                 />
               </div>
 
               <div>
                 <label className="block text-white/90 text-sm font-medium mb-2">
-                  Registration Limit
+                  Max Registrations *
                 </label>
                 <input
                   type="number"
                   min="1"
-                  value={formData.registration_limit}
+                  required
+                  value={formData.max_registrations}
                   onChange={(e) =>
-                    setFormData({ ...formData, registration_limit: parseInt(e.target.value) })
+                    setFormData({ ...formData, max_registrations: parseInt(e.target.value) })
                   }
-                  className="w-full px-4 py-2 rounded-lg backdrop-blur-xl bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:border-orange-500/50 focus:outline-none transition-colors"
+                  className="w-full px-4 py-2 rounded-lg backdrop-blur-xl bg-white/5 border border-white/10 text-white focus:border-orange-500/50 focus:outline-none transition-colors"
                 />
               </div>
 
-              <div>
+              <div className="md:col-span-2">
+                <label className="block text-white/90 text-sm font-medium mb-2">
+                  Full Description *
+                </label>
+                <textarea
+                  required
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="w-full px-4 py-2 rounded-lg backdrop-blur-xl bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:border-orange-500/50 focus:outline-none transition-colors"
+                  rows={4}
+                />
+              </div>
+
+              <div className="md:col-span-2">
                 <label className="block text-white/90 text-sm font-medium mb-2">
                   Poster Image (Optional)
                 </label>
@@ -661,22 +606,13 @@ export default function AdminDashboard() {
                 disabled={uploading}
                 className="flex-1 py-3 px-4 rounded-lg bg-gradient-to-r from-orange-400 to-orange-600 text-white font-semibold hover:shadow-lg hover:shadow-orange-500/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
-                {uploading ? "Updating Event..." : "Update Event"}
+                {uploading ? "Updating..." : "Update Event"}
               </button>
               <button
                 type="button"
                 onClick={() => {
                   setShowEditForm(false);
                   setEditingEventId(null);
-                  setFormData({
-                    title: "",
-                    description: "",
-                    date: "",
-                    location: "",
-                    category: "",
-                    registration_limit: 100,
-                  });
-                  setPosterFile(null);
                 }}
                 className="flex-1 py-3 px-4 rounded-lg bg-white/10 text-white font-semibold hover:bg-white/20 transition-all"
               >
@@ -709,9 +645,9 @@ export default function AdminDashboard() {
                       className="w-full text-left"
                     >
                       <h3 className="text-white font-semibold mb-2">{event.title}</h3>
-                      <p className="text-white/60 text-sm mb-2">{event.location}</p>
+                      <p className="text-white/60 text-sm mb-2">{event.venue}</p>
                       <p className="text-white/50 text-xs">
-                        {new Date(event.date).toLocaleString()}
+                        {new Date(event.date).toLocaleDateString()} at {event.time}
                       </p>
                     </button>
                     <div className="flex gap-2 mt-3 pt-3 border-t border-white/10">
@@ -771,7 +707,7 @@ export default function AdminDashboard() {
                     {registrations.map((reg) => (
                       <tr key={reg.id} className="hover:bg-white/5 transition-colors">
                         <td className="px-4 py-3 text-white">{reg.student_name}</td>
-                        <td className="px-4 py-3 text-white/80">{reg.student_roll_no}</td>
+                        <td className="px-4 py-3 text-white/80">{reg.register_number}</td>
                         <td className="px-4 py-3 text-white/80">{reg.department}</td>
                         <td className="px-4 py-3 text-white/80 text-xs">{reg.email}</td>
                       </tr>
@@ -781,13 +717,6 @@ export default function AdminDashboard() {
               </div>
             )}
           </div>
-        </div>
-
-        {/* Back to Events */}
-        <div className="mt-8 text-center">
-          <Link href="/" className="text-white/60 hover:text-white transition-colors">
-            Back to Events
-          </Link>
         </div>
       </div>
     </div>
