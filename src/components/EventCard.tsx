@@ -40,15 +40,15 @@ export default function EventCard({ event }: EventCardProps) {
       </div>
 
       {/* Card Content */}
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         {/* Date Badge */}
         <div className="flex items-center gap-2 mb-3">
-          <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-gradient-to-br from-orange-400 to-orange-600">
-            <span className="text-white text-sm font-bold">
+          <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-gradient-to-br from-orange-400 to-orange-600 flex-shrink-0">
+            <span className="text-white text-xs sm:text-sm font-bold">
               {eventDate.getDate()}
             </span>
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-white/90 text-xs font-semibold">
               {eventDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
             </p>
@@ -57,12 +57,12 @@ export default function EventCard({ event }: EventCardProps) {
         </div>
 
         {/* Title */}
-        <h3 className="text-lg font-bold text-white mb-2 line-clamp-2">
+        <h3 className="text-base sm:text-lg font-bold text-white mb-2 line-clamp-2">
           {event.title}
         </h3>
 
         {/* Description */}
-        <p className="text-white/70 text-sm mb-4 line-clamp-2">
+        <p className="text-white/70 text-xs sm:text-sm mb-4 line-clamp-2">
           {event.short_description}
         </p>
 
@@ -89,7 +89,7 @@ export default function EventCard({ event }: EventCardProps) {
         {/* Button */}
         <Link
           href={`/events/${event.id}`}
-          className={`block w-full py-2 px-4 rounded-lg font-semibold text-center transition-all duration-300 ${
+          className={`block w-full py-2 px-4 rounded-lg font-semibold text-xs sm:text-sm text-center transition-all duration-300 ${
             registrationFull
               ? 'bg-white/10 text-white/50 cursor-not-allowed'
               : 'bg-gradient-to-r from-orange-400 to-orange-600 text-white hover:shadow-lg hover:shadow-orange-500/50 hover:scale-105'
