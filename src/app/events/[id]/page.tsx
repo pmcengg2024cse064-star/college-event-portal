@@ -35,7 +35,7 @@ export default function EventDetailsPage() {
   });
   const [submitting, setSubmitting] = useState(false);
   const [registrationError, setRegistrationError] = useState("");
-  const [registrationSuccess, setRegistrationSuccess] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   // Fetch event details
   useEffect(() => {
@@ -77,7 +77,7 @@ export default function EventDetailsPage() {
   const handleRegistration = async (e: React.FormEvent) => {
     e.preventDefault();
     setRegistrationError("");
-    setRegistrationSuccess(false);
+    setShowSuccessModal(false);
     setSubmitting(true);
 
     try {
@@ -113,12 +113,9 @@ export default function EventDetailsPage() {
 
       if (registerError) throw registerError;
 
-      setRegistrationSuccess(true);
+      setShowSuccessModal(true);
       setFormData({ name: "", rollNo: "", department: "", email: "" });
       setRegistrationCount(registrationCount + 1);
-
-      // Clear success message after 3 seconds
-      setTimeout(() => setRegistrationSuccess(false), 3000);
     } catch (err) {
       setRegistrationError(err instanceof Error ? err.message : "Registration failed");
     } finally {
@@ -230,11 +227,6 @@ export default function EventDetailsPage() {
                 </div>
               ) : (
                 <form onSubmit={handleRegistration} className="space-y-4">
-                  {registrationSuccess && (
-                    <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 text-green-400 text-sm">
-                      ✓ Registration successful!
-                    </div>
-                  )}
 
                   {registrationError && (
                     <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-red-400 text-sm">
@@ -319,6 +311,35 @@ export default function EventDetailsPage() {
           </div>
         </div>
       </div>
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-white/10 rounded-2xl p-8 max-w-md w-full text-center relative shadow-2xl shadow-orange-500/20 overflow-hidden">
+            {/* Background Glow */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-32 bg-orange-500/20 rounded-full blur-3xl -z-10" />
+
+            {/* Icon */}
+            <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-green-500/30">
+              <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+
+            <h3 className="text-2xl font-bold text-white mb-2">Registration Successful!</h3>
+            <p className="text-white/60 mb-8">
+              Thank you for registering. We look forward to seeing you at the event!
+            </p>
+
+            <button
+              onClick={() => setShowSuccessModal(false)}
+              className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-orange-400 to-orange-600 text-white font-semibold hover:shadow-lg hover:shadow-orange-500/50 transition-all transform hover:-translate-y-0.5"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
