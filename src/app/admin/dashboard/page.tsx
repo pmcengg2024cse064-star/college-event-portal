@@ -281,7 +281,7 @@ export default function AdminDashboard() {
     const headers = ["Name", "Roll Number", "Department", "Email", "Registered At"];
     const rows = registrations.map((reg) => [
       reg.student_name,
-      reg.register_number,
+      reg.student_roll_no,
       reg.department,
       reg.email,
       new Date(reg.created_at).toLocaleString(),
@@ -700,7 +700,7 @@ export default function AdminDashboard() {
                     {registrations.map((reg) => (
                       <tr key={reg.id} className="hover:bg-white/5 transition-colors">
                         <td className="px-4 py-3 text-white">{reg.student_name}</td>
-                        <td className="px-4 py-3 text-white/80">{reg.register_number}</td>
+                        <td className="px-4 py-3 text-white/80">{reg.student_roll_no}</td>
                         <td className="px-4 py-3 text-white/80">{reg.department}</td>
                         <td className="px-4 py-3 text-white/80 text-xs">{reg.email}</td>
                       </tr>
